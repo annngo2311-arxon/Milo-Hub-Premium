@@ -1,0 +1,402 @@
+--[[
+    Milo Hub
+    Premium utility: Aimlock, ESP, Fix Lag, Remove Trees, Remove Trash/Rocks, Target Lock, Ping Viewer
+    Neon purple-black theme
+]]
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+local NEON = Color3.fromRGB(190, 70, 255)
+local DARK = Color3.fromRGB(12, 8, 22)
+local DARK2 = Color3.fromRGB(31, 17, 48)
+local WHITE = Color3.fromRGB(255, 255, 255)
+local Lighting = game:GetService("Lighting")
+
+local function getGuiParent()
+    local ok, result = pcall(function()
+        if typeof(gethui) == "function" then return gethui() end
+        return LocalPlayer:WaitForChild("PlayerGui")
+    end)
+    if ok then return result end
+    return LocalPlayer:WaitForChild("PlayerGui")
+end
+
+local parent = getGuiParent()
+pcall(function()
+    local old = parent:FindFirstChild("MiloHubPremium")
+    if old then old:Destroy() end
+end)
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "MiloHubPremium"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = parent
+
+local Main = Instance.new("Frame")
+Main.Name = "MainFrame"
+Main.Size = UDim2.new(0, 320, 0, 390)
+Main.Position = UDim2.new(0.5, -160, 0.5, -195)
+Main.BackgroundColor3 = DARK
+Main.BorderSizePixel = 0
+Main.Active = true
+Main.Parent = ScreenGui
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
+local stroke = Instance.new("UIStroke", Main)
+stroke.Color = NEON
+stroke.Thickness = 1.5
+
+local Bar = Instance.new("Frame")
+Bar.Name = "TitleBar"
+Bar.Size = UDim2.new(1, 0, 0, 38)
+Bar.BackgroundColor3 = DARK2
+Bar.BorderSizePixel = 0
+Bar.Parent = Main
+Instance.new("UICorner", Bar).CornerRadius = UDim.new(0, 10)
+local cover = Instance.new("Frame")
+cover.Size = UDim2.new(1, 0, 0, 10)
+cover.Position = UDim2.new(0, 0, 1, -10)
+cover.BackgroundColor3 = DARK2
+cover.BorderSizePixel = 0
+cover.Parent = Bar
+
+local Title = Instance.new("TextLabel")
+Title.Name = "TitleLabel"
+Title.Size = UDim2.new(1, -112, 1, 0)
+Title.Position = UDim2.new(0, 12, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "Milo Hub Premium"
+Title.TextColor3 = NEON
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 17
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Bar
+
+local Minimize = Instance.new("TextButton")
+Minimize.Name = "MinimizeButton"
+Minimize.Size = UDim2.new(0, 27, 0, 26)
+Minimize.Position = UDim2.new(1, -63, 0, 6)
+Minimize.BackgroundColor3 = DARK
+Minimize.Text = "−"
+Minimize.TextColor3 = NEON
+Minimize.Font = Enum.Font.GothamBold
+Minimize.TextSize = 20
+Minimize.Parent = Bar
+Instance.new("UICorner", Minimize).CornerRadius = UDim.new(0, 6)
+
+local Restore = Instance.new("TextButton")
+Restore.Name = "RestoreButton"
+Restore.Size = UDim2.new(0, 52, 0, 52)
+Restore.Position = UDim2.new(0, 18, 0.5, -26)
+Restore.BackgroundColor3 = DARK
+Restore.BorderSizePixel = 0
+Restore.Text = "M"
+Restore.TextColor3 = NEON
+Restore.Font = Enum.Font.GothamBlack
+Restore.TextSize = 22
+Restore.Visible = false
+Restore.Active = true
+Restore.Parent = ScreenGui
+Instance.new("UICorner", Restore).CornerRadius = UDim.new(1, 0)
+local restoreStroke = Instance.new("UIStroke", Restore)
+restoreStroke.Color = NEON
+restoreStroke.Thickness = 2
+
+Minimize.MouseButton1Click:Connect(function()
+    Main.Visible = false
+    Restore.Visible = true
+end)
+Restore.MouseButton1Click:Connect(function()
+    Main.Visible = true
+    Restore.Visible = false
+end)
+
+local Close = Instance.new("TextButton")
+Close.Size = UDim2.new(0, 27, 0, 26)
+Close.Position = UDim2.new(1, -33, 0, 6)
+Close.BackgroundColor3 = NEON
+Close.Text = "×"
+Close.TextColor3 = DARK
+Close.Font = Enum.Font.GothamBold
+Close.TextSize = 20
+Close.Parent = Bar
+Instance.new("UICorner", Close).CornerRadius = UDim.new(0, 6)
+Close.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
+
+-- Drag the menu on mouse or touchscreen.
+do
+    local dragging, dragInput, dragStart, startPos
+    Bar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = Main.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    Bar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input == dragInput or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+local function makeButton(name, label, y)
+    local b = Instance.new("TextButton")
+    b.Name = name
+    b.Size = UDim2.new(1, -24, 0, 42)
+    b.Position = UDim2.new(0, 12, 0, y)
+    b.BackgroundColor3 = DARK2
+    b.BorderSizePixel = 0
+    b.Text = label
+    b.TextColor3 = NEON
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 14
+    b.AutoButtonColor = false
+    b.Parent = Main
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 7)
+    local line = Instance.new("UIStroke", b)
+    line.Color = NEON
+    line.Thickness = 1
+    b.MouseEnter:Connect(function()
+        TweenService:Create(b, TweenInfo.new(0.12), {BackgroundColor3 = Color3.fromRGB(61, 30, 83)}):Play()
+    end)
+    b.MouseLeave:Connect(function()
+        TweenService:Create(b, TweenInfo.new(0.12), {BackgroundColor3 = DARK2}):Play()
+    end)
+    return b
+end
+
+-- Scrollable feature list keeps the menu usable on mobile.
+local list = Instance.new("ScrollingFrame")
+list.Name = "FeatureList"
+list.Size = UDim2.new(1, -16, 1, -50)
+list.Position = UDim2.new(0, 8, 0, 44)
+list.BackgroundTransparency = 1
+list.BorderSizePixel = 0
+list.ScrollBarThickness = 4
+list.ScrollBarImageColor3 = NEON
+list.CanvasSize = UDim2.new(0, 0, 0, 0)
+list.AutomaticCanvasSize = Enum.AutomaticSize.Y
+list.Parent = Main
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 7)
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Parent = list
+
+local function featureButton(name, label, order)
+    local b = makeButton(name, label, 0)
+    b.Position = UDim2.new(0, 4, 0, 0)
+    b.Size = UDim2.new(1, -16, 0, 40)
+    b.LayoutOrder = order
+    b.Parent = list
+    return b
+end
+local AimBtn = featureButton("AimlockButton", "AIMLOCK: OFF", 1)
+local EspBtn = featureButton("ESPButton", "ESP: OFF", 2)
+local FixBtn = featureButton("FixLagButton", "FIX LAG: RUN", 3)
+local TreesBtn = featureButton("RemoveTreesButton", "XÓA CÂY: OFF", 4)
+local DebrisBtn = featureButton("RemoveDebrisButton", "XÓA RÁC & ĐÁ: OFF", 5)
+local TargetBtn = featureButton("TargetLockButton", "TARGET LOCK: OFF", 6)
+local PingBtn = featureButton("PingViewerButton", "PING VIEWER: OFF", 7)
+
+local function setButtonState(button, label, active)
+    button.Text = label .. (active and ": ON" or ": OFF")
+    button.BackgroundColor3 = active and Color3.fromRGB(67, 31, 91) or DARK2
+end
+
+-- Aimlock: rotates toward the nearest living player.
+local aimActive, aimConnection = false, nil
+local function closestPlayer()
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return nil end
+    local chosen, dist = nil, math.huge
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local c = player.Character
+            local r = c and c:FindFirstChild("HumanoidRootPart")
+            local h = c and c:FindFirstChildOfClass("Humanoid")
+            if r and h and h.Health > 0 then
+                local d = (root.Position - r.Position).Magnitude
+                if d < dist then chosen, dist = player, d end
+            end
+        end
+    end
+    return chosen
+end
+AimBtn.MouseButton1Click:Connect(function()
+    aimActive = not aimActive
+    setButtonState(AimBtn, "AIMLOCK", aimActive)
+    if aimConnection then aimConnection:Disconnect(); aimConnection = nil end
+    if aimActive then
+        aimConnection = RunService.RenderStepped:Connect(function()
+            local target = closestPlayer()
+            local c = LocalPlayer.Character
+            local r = c and c:FindFirstChild("HumanoidRootPart")
+            local tc = target and target.Character
+            local tr = tc and tc:FindFirstChild("HumanoidRootPart")
+            if r and tr then local p,t = r.Position,tr.Position; r.CFrame = CFrame.new(p, Vector3.new(t.X,p.Y,t.Z)) end
+        end)
+    end
+end)
+
+-- ESP labels
+local espActive, espObjects = false, {}
+local function clearESP(player)
+    if espObjects[player] then espObjects[player]:Destroy(); espObjects[player] = nil end
+end
+local function addESP(player, char)
+    if player == LocalPlayer or not espActive or not char then return end
+    clearESP(player)
+    local head = char:FindFirstChild("Head") or char:WaitForChild("Head", 5)
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not head or not hum or not espActive then return end
+    local gui = Instance.new("BillboardGui")
+    gui.Name, gui.Adornee, gui.Size = "MiloPremiumESP", head, UDim2.new(0, 150, 0, 42)
+    gui.StudsOffset, gui.AlwaysOnTop = Vector3.new(0, 2.4, 0), true
+    gui.Parent = char
+    local text = Instance.new("TextLabel")
+    text.Size, text.BackgroundTransparency = UDim2.new(1,0,1,0), 1
+    text.TextColor3, text.TextStrokeColor3, text.TextStrokeTransparency = NEON, Color3.new(0,0,0), 0.1
+    text.Font, text.TextSize = Enum.Font.GothamBold, 12
+    text.Parent = gui
+    local function update() if gui.Parent and hum.Parent then text.Text = string.format("%s\nHP: %d/%d", player.Name, math.floor(hum.Health), math.floor(hum.MaxHealth)) end end
+    update(); hum.HealthChanged:Connect(update)
+    espObjects[player] = gui
+end
+local function hookPlayer(player)
+    if player == LocalPlayer then return end
+    player.CharacterAdded:Connect(function(char) if espActive then task.spawn(addESP, player, char) end end)
+    if espActive and player.Character then task.spawn(addESP, player, player.Character) end
+end
+for _,p in ipairs(Players:GetPlayers()) do hookPlayer(p) end
+Players.PlayerAdded:Connect(hookPlayer)
+Players.PlayerRemoving:Connect(clearESP)
+EspBtn.MouseButton1Click:Connect(function()
+    espActive = not espActive; setButtonState(EspBtn, "ESP", espActive)
+    if espActive then for _,p in ipairs(Players:GetPlayers()) do if p.Character then task.spawn(addESP,p,p.Character) end end
+    else for p in pairs(espObjects) do clearESP(p) end end
+end)
+
+-- Fix lag: removes visual effects and disables shadows locally. This is destructive to client visuals.
+FixBtn.MouseButton1Click:Connect(function()
+    local classes = {ParticleEmitter=true, Trail=true, Smoke=true, Fire=true, Sparkles=true, Beam=true, Explosion=true, Highlight=true}
+    for _,obj in ipairs(workspace:GetDescendants()) do
+        if classes[obj.ClassName] then pcall(function() obj:Destroy() end)
+        elseif obj:IsA("BasePart") then obj.CastShadow = false end
+    end
+    Lighting.GlobalShadows = false
+    Lighting.FogEnd = 100000
+    FixBtn.Text = "FIX LAG: DONE"
+end)
+
+-- Toggle removal of tree-like parts as they appear.
+local treesOn, treesConn = false, nil
+local function isTree(obj)
+    if not obj:IsA("BasePart") then return false end
+    local n = string.lower(obj.Name)
+    if n:find("leaf") or n:find("leaves") or n:find("bush") or n:find("plant") then return false end
+    return n:find("tree") ~= nil or n:find("trunk") ~= nil or n:find("branch") ~= nil or (obj.Parent and string.lower(obj.Parent.Name):find("tree") ~= nil)
+end
+local function removeTreesNow()
+    for _,obj in ipairs(workspace:GetDescendants()) do if not (LocalPlayer.Character and obj:IsDescendantOf(LocalPlayer.Character)) and isTree(obj) then pcall(function() obj:Destroy() end) end end
+end
+TreesBtn.MouseButton1Click:Connect(function()
+    treesOn = not treesOn; setButtonState(TreesBtn, "XÓA CÂY", treesOn)
+    if treesOn then removeTreesNow(); treesConn = workspace.DescendantAdded:Connect(function(obj) if treesOn and isTree(obj) then task.defer(function() if obj.Parent then obj:Destroy() end end) end end)
+    elseif treesConn then treesConn:Disconnect(); treesConn = nil end
+end)
+
+-- Toggle removal of named trash/rock props.
+local debrisOn, debrisConn = false, nil
+local keywords = {"trash","bin","rock","stone","debris","rubble","dumpster","bench","chair","seat","ghế","spike","pillar","rockspike"}
+local function isDebris(obj)
+    if not (obj:IsA("BasePart") or obj:IsA("Model")) then return false end
+    local n = string.lower(obj.Name)
+    for _,word in ipairs(keywords) do if n:find(word,1,true) then return true end end
+    return false
+end
+local function removeDebrisNow()
+    for _,obj in ipairs(workspace:GetDescendants()) do if not (LocalPlayer.Character and obj:IsDescendantOf(LocalPlayer.Character)) and isDebris(obj) then pcall(function() obj:Destroy() end) end end
+end
+DebrisBtn.MouseButton1Click:Connect(function()
+    debrisOn = not debrisOn; setButtonState(DebrisBtn, "XÓA RÁC & ĐÁ", debrisOn)
+    if debrisOn then removeDebrisNow(); debrisConn = workspace.DescendantAdded:Connect(function(obj) if debrisOn and isDebris(obj) then task.defer(function() if obj.Parent then obj:Destroy() end end) end end)
+    elseif debrisConn then debrisConn:Disconnect(); debrisConn = nil end
+end)
+
+-- Target lock picker: choose a player, then the local character faces that target.
+local targetActive, targetPlayer, targetConn, picker = false, nil, nil, nil
+local function showPicker()
+    if picker then picker:Destroy() end
+    picker = Instance.new("Frame")
+    picker.Name = "TargetPicker"; picker.Size = UDim2.new(0,190,0,230); picker.Position = UDim2.new(0.5,165,0.5,-115)
+    picker.BackgroundColor3 = DARK; picker.BorderSizePixel = 0; picker.Parent = ScreenGui
+    Instance.new("UICorner",picker).CornerRadius = UDim.new(0,8)
+    local st = Instance.new("UIStroke",picker); st.Color = NEON; st.Thickness = 1.2
+    local heading = Instance.new("TextLabel"); heading.Size = UDim2.new(1,0,0,32); heading.BackgroundColor3 = DARK2; heading.Text = "CHỌN TARGET"; heading.TextColor3 = NEON; heading.Font = Enum.Font.GothamBold; heading.TextSize = 13; heading.Parent = picker
+    local scroll = Instance.new("ScrollingFrame"); scroll.Size = UDim2.new(1,-8,1,-38); scroll.Position = UDim2.new(0,4,0,34); scroll.BackgroundTransparency = 1; scroll.BorderSizePixel = 0; scroll.ScrollBarThickness = 3; scroll.CanvasSize = UDim2.new(0,0,0,0); scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y; scroll.Parent = picker
+    local lay = Instance.new("UIListLayout"); lay.Padding = UDim.new(0,4); lay.Parent = scroll
+    for _,p in ipairs(Players:GetPlayers()) do if p ~= LocalPlayer then
+        local b = Instance.new("TextButton"); b.Size = UDim2.new(1,-4,0,30); b.BackgroundColor3 = DARK2; b.Text = p.Name; b.TextColor3 = NEON; b.Font = Enum.Font.Gotham; b.TextSize = 12; b.Parent = scroll
+        Instance.new("UICorner",b).CornerRadius = UDim.new(0,5)
+        b.MouseButton1Click:Connect(function() targetPlayer = p; heading.Text = "TARGET: "..p.Name end)
+    end end
+end
+TargetBtn.MouseButton1Click:Connect(function()
+    targetActive = not targetActive; setButtonState(TargetBtn,"TARGET LOCK",targetActive)
+    if targetActive then showPicker(); targetConn = RunService.RenderStepped:Connect(function()
+        local c = LocalPlayer.Character; local r = c and c:FindFirstChild("HumanoidRootPart")
+        local tc = targetPlayer and targetPlayer.Character; local tr = tc and tc:FindFirstChild("HumanoidRootPart")
+        if r and tr then local p,t=r.Position,tr.Position; r.CFrame=CFrame.new(p,Vector3.new(t.X,p.Y,t.Z)) end
+    end)
+    else if targetConn then targetConn:Disconnect(); targetConn=nil end; targetPlayer=nil; if picker then picker:Destroy(); picker=nil end end
+end)
+
+-- Ping/FPS viewer toggle
+local pingOn, pingGui, pingConn = false, nil, nil
+local fps, frameCount, lastFps = 0, 0, os.clock()
+RunService.RenderStepped:Connect(function()
+    frameCount += 1
+    local now = os.clock()
+    if now-lastFps >= 1 then fps = math.floor(frameCount/(now-lastFps)); frameCount=0; lastFps=now end
+end)
+PingBtn.MouseButton1Click:Connect(function()
+    pingOn = not pingOn; setButtonState(PingBtn,"PING VIEWER",pingOn)
+    if pingOn then
+        pingGui = Instance.new("TextLabel"); pingGui.Name="PingViewer"; pingGui.Size=UDim2.new(0,170,0,48); pingGui.Position=UDim2.new(1,-180,0,12)
+        pingGui.BackgroundColor3=DARK; pingGui.BackgroundTransparency=0.12; pingGui.TextColor3=NEON; pingGui.TextStrokeTransparency=0.5
+        pingGui.Font=Enum.Font.GothamBold; pingGui.TextSize=14; pingGui.Text="Ping: -- ms\nFPS: --"; pingGui.Parent=ScreenGui
+        Instance.new("UICorner",pingGui).CornerRadius=UDim.new(0,8); local ps=Instance.new("UIStroke",pingGui); ps.Color=NEON; ps.Thickness=1.2
+        pingConn = RunService.RenderStepped:Connect(function()
+            if pingGui and pingGui.Parent then
+                local ping = "N/A"
+                pcall(function() local stats=game:GetService("Stats"); local item=stats.Network.ServerStatsItem["Data Ping"]; ping=math.floor(item:GetValue()).." ms" end)
+                pingGui.Text = "Ping: "..ping.."\nFPS: "..tostring(fps)
+            end
+        end)
+    else
+        if pingConn then pingConn:Disconnect(); pingConn=nil end
+        if pingGui then pingGui:Destroy(); pingGui=nil end
+    end
+end)
+
+ScreenGui.Destroying:Connect(function()
+    if aimConnection then aimConnection:Disconnect() end
+    if treesConn then treesConn:Disconnect() end
+    if debrisConn then debrisConn:Disconnect() end
+    if targetConn then targetConn:Disconnect() end
+    if pingConn then pingConn:Disconnect() end
+    for player in pairs(espObjects) do clearESP(player) end
+end)
